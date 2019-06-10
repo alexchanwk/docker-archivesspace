@@ -1,0 +1,16 @@
+sudo: required
+
+dist: trusty
+
+language: generic
+
+env:
+  - TAG=v2.5.2
+
+stage: build image
+script:
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker build --build-arg AS_VERSION=$TAG -t docker-archivesspace .
+  - docker tag docker-archivesspace $DOCKER_ORGANIZATION/docker-archivesspace:$TAG
+  - docker push $DOCKER_ORGANIZATION/docker-archivesspace:$TAG
+  - docker run --rm --entrypoint "/bin/bash" $DOCKER_ORGANIZATION/docker-archivesspace:$TAG -c "if [ -e archivesspace/lib/mysql-connector*.jar ]; then (exit 0); else (exit 1); fi"

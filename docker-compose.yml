@@ -1,0 +1,154 @@
+  version: '3.6'
+
+  services:
+    nginx:
+      image: nginx
+      networks:
+        - overlay
+      ports:
+      - "80:80"
+        protocol: tcp
+        mode: host
+      configs:
+      - source: nginx_config
+        target: /etc/nginx/nginx.conf
+        mode: 0444
+      depends_on:
+        - archivesspace
+        - mysql
+        - solr
+        - minio
+      restart: always
+
+    archivesspace:
+      image: 'cuhklibrary/docker-archivesspace:v2.5.2'
+      hostname: archivesspace.localdomain
+      networks:
+        - overlay
+      depends_on:
+        - mysql
+      healthcheck:
+        disable: true
+      configs:
+        - aspace_app_config
+      secrets:
+        - archivesspace_mysql_root_password
+        - archivesspace_mysql_password
+        - minio_secret_key
+        - minio_access_key
+      environment:
+        - ASPACE_JAVA_XMX=-Xmx4096m
+        - ASPACE_JAVA_XSS=-Xss2m
+        - ASPACE_JAVA_MAXPERMSIZE=-XX:MaxPermSize=1024m
+        - ASPACE_GC_OPTS=-XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:NewRatio=1
+        - MYSQL_HOST=mysql
+        - MYSQL_DATABASE=archivesspacedb
+        - MYSQL_USER=as
+        - MYSQL_PASSWORD_FILE=/run/secrets/archivesspace_mysql_password
+        - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/archivesspace_mysql_root_password
+        - MINIO_HOST=minio
+        - MINIO_ACCESS_KEY_FILE=/run/secrets/minio_access_key
+        - MINIO_SECRET_KEY_FILE=/run/secrets/minio_secret_key
+        - TIME_ZONE="Asia/Hong_Kong"
+        - ASPACE_EXT_PLUGIN_URL_cuhk_library="https://github.com/alexchanwk/archivesspace-plugin-cuhk-library/releases/download/v2.0.1/cuhk-library-v2.0.1.tar.gz"
+        - ASPACE_APP_CONFIG_FILES=aspace_app_config*
+        - SKIP_RESTORE_DATABASE=N
+        - SKIP_SETUP_DATABASE=N
+        - SKIP_START_SERVER=N
+
+    mysql:
+      image: 'library/mysql'
+      volumes:
+      - mysql-data:/var/lib/mysql
+      command: --character-set-server=utf8 --collation-server=utf8_unicode_ci --innodb_buffer_pool_size=2G --innodb_buffer_pool_instances=2
+      secrets:
+        - archivesspace_mysql_root_password
+        - archivesspace_mysql_password
+      environment:
+        - MYSQL_DATABASE=archivesspacedb
+        - MYSQL_USER=as
+        - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/archivesspace_mysql_root_password
+        - MYSQL_PASSWORD_FILE=/run/secrets/archivesspace_mysql_password
+      networks:
+        - overlay
+    
+    solr:
+      image: "solr"
+      networks:
+        - overlay
+      volumes:
+        - solr-data:/opt/solr/server/solr/mycores
+      configs:
+        - source: solr_config
+          target: /solr_config/solrconfig.xml
+        - source: solr_schema
+          target: /solr_config/schema.xml
+        - source: solr_stopwords
+          target: /solr_config/stopwords.txt
+        - source: solr_synonyms
+          target: /solr_config/synonyms.txt
+      entrypoint:
+        - docker-entrypoint.sh
+      command:
+        - solr-precreate
+        - archivesspace
+        - /solr_config
+
+    minio:
+      image: 'minio/minio'
+      volumes:
+        - minio-data:/minio
+      networks:
+        - overlay
+      healthcheck:
+        disable: true
+      command: server /minio
+      secrets:
+        - minio_secret_key
+        - minio_access_key
+      environment:
+        - MINIO_ACCESS_KEY_FILE=minio_access_key
+        - MINIO_SECRET_KEY_FILE=minio_secret_key
+
+  volumes:
+    minio-data:
+    mysql-data:
+    solr-data:
+
+  networks:
+    overlay:
+      driver: overlay
+
+  configs:
+    nginx_config:
+      external: true
+      name: aspace_nginx_config_${ENV}
+    aspace_app_config:
+      external: true
+      name: aspace_app_config_${ENV}
+    solr_config:
+      external: true
+      name: aspace_solr_config_${ENV}
+    solr_schema:
+      external: true
+      name: aspace_solr_schema_${ENV}
+    solr_stopwords:
+      external: true
+      name: aspace_solr_stopwords_${ENV}
+    solr_synonyms:
+      external: true
+      name: aspace_solr_synonyms_${ENV}
+
+  secrets:
+    archivesspace_mysql_root_password:
+      external: true
+      name: aspace_mysql_root_password_${ENV}
+    archivesspace_mysql_password:
+      external: true
+      name: aspace_mysql_password_${ENV}
+    minio_access_key:
+      external: true
+      name: aspace_minio_access_key_${ENV}
+    minio_secret_key:
+      external: true
+      name: aspace_minio_secret_key_${ENV}
