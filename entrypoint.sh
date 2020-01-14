@@ -90,8 +90,8 @@ done
 MINIO_READY="N"
 until [[ ${MINIO_READY} == "Y" ]]
 do
-    mc admin service status ${MINIO_ALIAS} 1>/dev/null 2>&1
-    if [[ $? == 0 ]]
+    MINIO_ENDPOINT_READY=`curl -s -o /dev/null -w "%{http_code}" http://${MINIO_HOST}:9000/minio/health/ready | grep 200 | wc -l`
+    if [[ ${MINIO_ENDPOINT_READY} > 0 ]]
     then
         MINIO_READY="Y"
         break
