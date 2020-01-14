@@ -62,10 +62,16 @@ fi
 
 if [[ -z ${MYSQL_HOST} || -z ${MYSQL_DATABASE} || -z ${MYSQL_USER} || -z ${MYSQL_PASSWORD} ]]
 then
-    USE_MYSQL="N"  
+    USE_MYSQL="N"
 fi
 
 # Configure Minio Client
+echo "Installing minio client..." | tee -a ${SETUP_LOG_FILE}
+cd minio
+wget -nv https://dl.minio.io/client/mc/release/linux-amd64/mc
+chmod +x mc
+cd ~
+
 echo "Configuring minio ..." | tee -a ${SETUP_LOG_FILE}
 MINIO_HOST_ADDED=`mc config host ls | grep ${MINIO_ALIAS} | wc -l`
 until [[ ${MINIO_HOST_ADDED} > 0 ]]
@@ -161,7 +167,7 @@ then
         echo "Database character set already UTF8!" | tee -a ${SETUP_LOG_FILE}
         echo
     else
-        mysql -e "ALTER DATABASE ${MYSQL_DATABASE} CHARACTER SET utf8 COLLATE utf8_general_ci"    
+        mysql -e "ALTER DATABASE ${MYSQL_DATABASE} CHARACTER SET utf8 COLLATE utf8_general_ci"
         if [[ $? == 0 ]]
         then
             echo "Database character set to UTF8 successfully!" | tee -a ${SETUP_LOG_FILE}
@@ -216,12 +222,12 @@ do
         PLUGIN_NAME_UNNORMALIZED=${env:22}
         PLUGIN_NAME=${PLUGIN_NAME_UNNORMALIZED//_/-}
         PLUGIN_URL=`echo ${!env} | xargs`
-        
+
         echo "Adding external plugin ${PLUGIN_NAME} from ${PLUGIN_URL}..."
         if [[ ! -z ${PLUGIN_NAME} && ! -z ${PLUGIN_URL} ]]
         then
             cd ${ASPACE_ROOT_PATH}/plugins
-            rm -rf ${PLUGIN_NAME} 
+            rm -rf ${PLUGIN_NAME}
             mkdir ${PLUGIN_NAME}
             cd ${PLUGIN_NAME}
             wget -nv -O ${PLUGIN_NAME}.tar.gz ${PLUGIN_URL}

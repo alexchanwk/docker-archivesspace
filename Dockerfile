@@ -43,11 +43,7 @@ RUN J_MYSQL_URL=`curl -w "%{url_effective}\n" -L -s -S https://mvnrepository.com
     wget -nv ${J_MYSQL_URL} && \
     cd ~
 
-RUN mkdir minio && \
-    cd minio && \
-    wget -nv https://dl.minio.io/client/mc/release/linux-amd64/mc && \
-    chmod +x mc && \
-    cd ~
+RUN mkdir minio
 
 ENV PATH="/home/archivesspace/minio:${PATH}"
 
