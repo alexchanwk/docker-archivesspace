@@ -41,11 +41,11 @@ RUN echo "Download version: ${AS_VERSION}" && \
     echo "${API_RESP}" | grep "browser_download_url" | cut -d: -f2- | xargs wget -nv && \
     if [ -f archivesspace*.zip ]; then unzip archivesspace*.zip > /dev/null 2>&1; rm archivesspace*.zip; fi
 
-RUN mv /mysql-connector-java.jar /home/archivesspace/archivesspace/lib && \
+RUN cp /mysql-connector-java.jar /home/archivesspace/archivesspace/lib && \
     cd ~
 
 RUN mkdir minio && \
-    mv /mc /home/archivesspace/minio/ && \
+    cp /mc /home/archivesspace/minio/ && \
     chmod +x /home/archivesspace/minio/mc
 
 ENV PATH="/home/archivesspace/minio:${PATH}"
