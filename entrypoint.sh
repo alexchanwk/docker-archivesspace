@@ -65,13 +65,6 @@ then
     USE_MYSQL="N"
 fi
 
-# Configure Minio Client
-echo "Installing minio client..." | tee -a ${SETUP_LOG_FILE}
-cd minio
-wget -nv https://dl.minio.io/client/mc/release/linux-amd64/mc
-chmod +x mc
-cd ~
-
 echo "Configuring minio ..." | tee -a ${SETUP_LOG_FILE}
 MINIO_HOST_ADDED=`mc config host ls | grep ${MINIO_ALIAS} | wc -l`
 until [[ ${MINIO_HOST_ADDED} > 0 ]]

@@ -4,8 +4,9 @@ ARG AS_VERSION=latest
 
 EXPOSE 8089 8080 8081 8082 8090 8091 8888
 
-COPY entrypoint.sh     /entrypoint.sh
-COPY restore.sh        /restore.sh
+COPY mc               /mc
+COPY entrypoint.sh    /entrypoint.sh
+COPY restore.sh       /restore.sh
 COPY backup.sh        /backup.sh
 
 RUN apt-get update && \
@@ -43,7 +44,9 @@ RUN J_MYSQL_URL=`curl -w "%{url_effective}\n" -L -s -S https://mvnrepository.com
     wget -nv ${J_MYSQL_URL} && \
     cd ~
 
-RUN mkdir minio
+RUN mkdir minio && \
+    cp /mc /home/archivesspace/minio/ && \
+    chmod +x /home/archivesspace/minio/mc
 
 ENV PATH="/home/archivesspace/minio:${PATH}"
 
